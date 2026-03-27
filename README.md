@@ -13,6 +13,7 @@ This is a robust, containerized REST API built with **FastAPI** and **PostgreSQL
 ## Prerequisites
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
 - An AWS Account (AWS Academy / Learner Lab is supported).
+- [uv](https://docs.astral.sh/uv/) (Extremely fast Python package and project manager).
 
 ## Local Setup (Windows & Linux)
 
@@ -31,6 +32,81 @@ docker compose up --build
 
 ### 3. Access the API
 * Swagger UI Documentation: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+
+---
+
+## How to Upload Files (Direct-to-S3 Workflow)
+
+Because this API uses a Serverless Event-Driven Architecture, files are not sent through the backend. Instead, you upload them directly to AWS S3 using a Presigned URL.
+
+**Step 1: Generate an Upload URL**
+Send a `POST` request to `/projects/{id}/documents` with the file metadata:
+```json
+{
+  "filename": "cat.jpg",
+  "content_type": "image/jpeg"
+}
+```
+*The API will return a JSON containing the `upload_url`.*
+
+**Step 2: Upload the File via cURL**
+Use the generated URL to upload your physical file directly to the S3 bucket. Ensure the `Content-Type` header matches exactly what you provided in Step 1!
+
+```bash
+# Example for Windows/Linux:
+curl -X PUT -T "./cat.jpg" -H "Content-Type: image/jpeg" "YOUR_LONG_PRESIGNED_UPLOAD_URL"
+```
+*If successful, AWS Lambda will automatically intercept this file, resize it (if it's an image), and save it with a `processed-` prefix!*
+
+---
+
+## Testing
+
+The project includes three types of tests: automated logic verification using **Pytest**, manual/semi-automated API testing using a **`.http`** file, and load testing using **Locust**.
+
+### 1. Automated Tests (Pytest)
+Automated tests are used to verify the application's logic in isolation (using database mocking).
+
+**Prerequisites:** Ensure your dependencies (including dev packages) are installed using `uv`:
+```bash
+uv sync
+```
+
+**Running tests:**
+```bash
+uv run pytest
+```
+*Tests are configured in `pytest.ini` and use `tests/test_api.py`.*
+
+### 2. Manual API Client (`test_main.http`)
+The `test_main.http` file allows you to execute real HTTP requests directly from your IDE (PyCharm or VS Code with REST Client extension).
+
+**How to use:**
+1. Start the application (`docker compose up` or `uv run uvicorn src.main:app`).
+2. Open `test_main.http` in your IDE.
+3. Click the **green "Play" icon** next to a request to execute it.
+4. **Authentication Flow:**
+    - Execute the **"Register new user"** request.
+    - Execute the **"Login (get token)"** request. The script will automatically save the token to a global variable `{{auth_token}}`.
+    - Subsequent requests (Projects, Documents) will automatically use this token.
+5. **Resource Management:** The file is structured to first create resources (Project -> Document) and then clean them up at the end.
+
+### 3. Load Testing (Locust)
+Locust is used to simulate concurrent users and measure the performance of the API.
+
+**Running Locust:**
+1. Start the application and its database (`docker compose up`).
+2. Run Locust from the terminal using `uv`:
+   ```bash
+   uv run locust
+   ```
+3. Open your browser at [http://localhost:8089](http://localhost:8089).
+4. Enter the target host (e.g., `http://localhost:8000`), number of users, and spawn rate.
+5. Start swarming.
+
+The `locustfile.py` is configured to:
+- Automatically register and log in unique users.
+- Perform random operations: checking profile, listing/creating projects, and initializing document uploads.
 
 ---
 

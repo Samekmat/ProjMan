@@ -1,0 +1,116 @@
+### Application status check
+GET http://127.0.0.1:8000/
+Accept: application/json
+
+### Health Check (requires database)
+GET http://127.0.0.1:8000/health
+Accept: application/json
+
+###
+### AUTHENTICATION
+###
+
+### Register new user
+POST http://127.0.0.1:8000/auth
+Content-Type: application/json
+
+{
+  "login": "test_user_http",
+  "password": "test_password_123",
+  "repeat_password": "test_password_123"
+}
+
+### Login (get token)
+POST http://127.0.0.1:8000/login
+Content-Type: application/x-www-form-urlencoded
+
+username=test_user_http&password=test_password_123
+
+> {% client.global.set("auth_token", response.body.access_token); %}
+
+### Check my data (requires login)
+GET http://127.0.0.1:8000/me
+Authorization: Bearer {{auth_token}}
+
+###
+### PROJECTS
+###
+
+### Create new project
+POST http://127.0.0.1:8000/projects
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "name": "Test project HTTP",
+  "description": "Project description created via file .http"
+}
+
+> {% client.global.set("project_id", response.body.project_id); %}
+
+### Get my projects list
+GET http://127.0.0.1:8000/projects
+Authorization: Bearer {{auth_token}}
+
+### Get project details
+GET http://127.0.0.1:8000/projects/{{project_id}}
+Authorization: Bearer {{auth_token}}
+
+### Update project
+PUT http://127.0.0.1:8000/projects/{{project_id}}/info
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "name": "Updated project name",
+  "description": "Updated description"
+}
+
+### Share project (link)
+GET http://127.0.0.1:8000/projects/{{project_id}}/share?email=another_user@example.com
+Authorization: Bearer {{auth_token}}
+
+###
+### DOCUMENTS (Requires created project)
+###
+
+### Initialize document upload
+POST http://127.0.0.1:8000/{{project_id}}/documents
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "filename": "test_document.pdf",
+  "content_type": "application/pdf"
+}
+
+> {% client.global.set("document_id", response.body.document_id); %}
+
+### Get document data (download link)
+GET http://127.0.0.1:8000/document/{{document_id}}
+Authorization: Bearer {{auth_token}}
+
+### Update document filename
+PATCH http://127.0.0.1:8000/document/{{document_id}}
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "filename": "renamed_document.pdf"
+}
+
+### Get project documents list
+GET http://127.0.0.1:8000/project/{{project_id}}/documents
+Authorization: Bearer {{auth_token}}
+
+###
+### CLEANUP (Delete created resources)
+###
+
+### Delete document
+DELETE http://127.0.0.1:8000/document/{{document_id}}
+Authorization: Bearer {{auth_token}}
+
+### Delete project
+DELETE http://127.0.0.1:8000/projects/{{project_id}}
+Authorization: Bearer {{auth_token}}
