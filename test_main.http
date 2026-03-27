@@ -53,11 +53,11 @@ GET http://127.0.0.1:8000/projects
 Authorization: Bearer {{auth_token}}
 
 ### Get project details
-GET http://127.0.0.1:8000/projects/{{project_id}}
+GET http://127.0.0.1:8000/project/{{project_id}}/info
 Authorization: Bearer {{auth_token}}
 
 ### Update project
-PUT http://127.0.0.1:8000/projects/{{project_id}}/info
+PUT http://127.0.0.1:8000/project/{{project_id}}/info
 Authorization: Bearer {{auth_token}}
 Content-Type: application/json
 
@@ -67,7 +67,7 @@ Content-Type: application/json
 }
 
 ### Share project (link)
-GET http://127.0.0.1:8000/projects/{{project_id}}/share?email=another_user@example.com
+GET http://127.0.0.1:8000/project/{{project_id}}/share?email=another_user@example.com
 Authorization: Bearer {{auth_token}}
 
 ###
@@ -75,7 +75,7 @@ Authorization: Bearer {{auth_token}}
 ###
 
 ### Initialize document upload
-POST http://127.0.0.1:8000/{{project_id}}/documents
+POST http://127.0.0.1:8000/project/{{project_id}}/documents
 Authorization: Bearer {{auth_token}}
 Content-Type: application/json
 
@@ -91,7 +91,7 @@ GET http://127.0.0.1:8000/document/{{document_id}}
 Authorization: Bearer {{auth_token}}
 
 ### Update document filename
-PATCH http://127.0.0.1:8000/document/{{document_id}}
+PUT http://127.0.0.1:8000/document/{{document_id}}
 Authorization: Bearer {{auth_token}}
 Content-Type: application/json
 
@@ -112,5 +112,5 @@ DELETE http://127.0.0.1:8000/document/{{document_id}}
 Authorization: Bearer {{auth_token}}
 
 ### Delete project
-DELETE http://127.0.0.1:8000/projects/{{project_id}}
+DELETE http://127.0.0.1:8000/project/{{project_id}}
 Authorization: Bearer {{auth_token}}
