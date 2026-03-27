@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -30,6 +31,7 @@ class ProjectResponse(BaseModel):
     name: str
     description: str | None
     total_storage_bytes: int
+    documents: List["DocumentResponse"] = []
 
 
 class DocumentCreate(BaseModel):

@@ -10,10 +10,10 @@ from src.api.schemas import ProjectCreate, ProjectResponse, ProjectUpdate
 from src.core.config import settings
 from src.db.connection import get_db_connection
 
-router = APIRouter(prefix="/projects", tags=["Projects"])
+router = APIRouter(tags=["Projects"])
 
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("/projects", status_code=status.HTTP_201_CREATED)
 async def create_project(
     project: ProjectCreate,
     current_user_id: str = Depends(get_current_user),
@@ -44,29 +44,53 @@ async def create_project(
     return {"message": "Project created successfully", "project_id": project_id}
 
 
-@router.get("", response_model=List[ProjectResponse])
+@router.get("/projects", response_model=List[ProjectResponse])
 async def get_my_projects(
     current_user_id: str = Depends(get_current_user),
     conn: asyncpg.Connection = Depends(get_db_connection),
 ):
     """
     Fetch a projects list that is accessible for the user.
-    Using INNER JOIN to filter projects that belong to another person.
+    Including full info: details + documents.
     """
     projects_records = await conn.fetch(
         """
-        SELECT p.id, p.name, p.description, p.total_storage_bytes
+        SELECT 
+            p.id, p.name, p.description, p.total_storage_bytes,
+            COALESCE(
+                JSON_AGG(
+                    JSON_BUILD_OBJECT(
+                        'id', d.id,
+                        'project_id', d.project_id,
+                        'filename', d.filename,
+                        's3_key', d.s3_key,
+                        'size_bytes', d.size_bytes,
+                        'created_at', d.created_at
+                    )
+                ) FILTER (WHERE d.id IS NOT NULL), '[]'
+            ) AS documents
         FROM projects p
         INNER JOIN project_users pu ON p.id = pu.project_id
+        LEFT JOIN documents d ON p.id = d.project_id
         WHERE pu.user_id = $1::uuid
+        GROUP BY p.id
         ORDER BY p.created_at DESC
         """,
         current_user_id,
     )
-    return [dict(project) for project in projects_records]
+
+    import json
+    results = []
+    for p in projects_records:
+        p_dict = dict(p)
+        if isinstance(p_dict["documents"], str):
+            p_dict["documents"] = json.loads(p_dict["documents"])
+        results.append(p_dict)
+
+    return results
 
 
-@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/project/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_project(
     project_id: str,
     current_user_id: str = Depends(get_current_user),
@@ -97,7 +121,7 @@ async def delete_project(
     return {"message": "Project deleted successfully"}
 
 
-@router.post("/{project_id}/invite", status_code=status.HTTP_200_OK)
+@router.post("/project/{project_id}/invite", status_code=status.HTTP_200_OK)
 async def invite_user_to_project(
     project_id: str,
     user: str,
@@ -125,10 +149,16 @@ async def invite_user_to_project(
 
     if not target_user:
         raise HTTPException(
-            status_code=404, detial=f"User with login '{user}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"User with login '{user}' not found"
         )
 
     target_user_id = target_user["id"]
+
+    if str(target_user_id) == current_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot invite yourself to the project"
+        )
 
     existing_role = await conn.fetchval(
         """
@@ -156,7 +186,7 @@ async def invite_user_to_project(
     return {"message": f"User '{user}' invited successfully"}
 
 
-@router.get("/{project_id}/info", response_model=ProjectResponse)
+@router.get("/project/{project_id}/info", response_model=ProjectResponse)
 async def get_project_info(
     project_id: str,
     current_user_id: str = Depends(get_current_user),
@@ -176,12 +206,12 @@ async def get_project_info(
     )
 
     if not record:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
 
     return dict(record)
 
 
-@router.put("/{project_id}/info", response_model=ProjectResponse)
+@router.put("/project/{project_id}/info", response_model=ProjectResponse)
 async def update_project_info(
     project_id: str,
     project_update: ProjectUpdate,
@@ -202,7 +232,7 @@ async def update_project_info(
     )
 
     if not role:
-        raise HTTPException(status_code=403, detail="Access denied")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
     updated_record = await conn.fetchrow(
         """
@@ -220,7 +250,7 @@ async def update_project_info(
     return dict(updated_record)
 
 
-@router.get("/{project_id}/share")
+@router.get("/project/{project_id}/share")
 async def share_project_via_email(
     project_id: str,
     email: str,
@@ -233,7 +263,7 @@ async def share_project_via_email(
     """
     role = await conn.fetchval(
         """
-        SELECT role FROM project_users"
+        SELECT role FROM project_users
         WHERE project_id = $1::uuid AND user_id = $2::uuid
         """,
         project_id,
@@ -241,7 +271,7 @@ async def share_project_via_email(
     )
 
     if role != "owner":
-        raise HTTPException(status_code=403, detail="Only owner can share the project")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only owner can share the project")
 
     expire = datetime.now(timezone.utc) + timedelta(hours=48)
 
@@ -275,7 +305,7 @@ async def join_project_via_link(
         )
 
         if payload.get("type") != "invite":
-            raise HTTPException(status_code=400, detail="Invalid token type")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token type")
 
         project_id = payload.get("project_id")
         email = payload.get("email")
@@ -288,7 +318,7 @@ async def join_project_via_link(
     target_user = await conn.fetchrow("SELECT id FROM users WHERE login = $1", email)
     if not target_user:
         raise HTTPException(
-            status_code=404, detail="User with this email/login must register first"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User with this email/login must register first"
         )
 
     await conn.execute(

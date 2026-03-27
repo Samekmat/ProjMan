@@ -16,7 +16,7 @@ from src.services.s3 import (
 router = APIRouter(tags=["Documents"])
 
 
-@router.post("/{project_id}/documents", status_code=status.HTTP_201_CREATED)
+@router.post("/project/{project_id}/documents", status_code=status.HTTP_201_CREATED)
 async def create_document_upload_url(
     project_id: str,
     document: DocumentCreate,
@@ -38,7 +38,7 @@ async def create_document_upload_url(
 
     if not role:
         raise HTTPException(
-            status_code=403, detail="You don't have access to this project"
+            status_code=status.HTTP_403_FORBIDDEN, detail="You don't have access to this project"
         )
 
     doc_id = str(uuid.uuid4())
@@ -82,7 +82,7 @@ async def get_project_documents(
         current_user_id,
     )
     if not role:
-        raise HTTPException(status_code=403, detail="Access denied")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
     docs = await conn.fetch(
         """
@@ -116,7 +116,7 @@ async def download_document(
 
     if not record:
         raise HTTPException(
-            status_code=404, detail="Document not found or access denied"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found or access denied"
         )
 
     download_url = await generate_presigned_download_url(record["s3_key"])
@@ -147,7 +147,7 @@ async def delete_document(
 
     if not record:
         raise HTTPException(
-            status_code=404, detail="Document not found or access denied"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Document not found or access denied"
         )
 
     if record["role"] != "owner":
@@ -184,7 +184,7 @@ async def update_document(
     )
 
     if not access:
-        raise HTTPException(status_code=403, detail="Access denied")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
     updated_document = await conn.fetchrow(
         """

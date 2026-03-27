@@ -37,6 +37,6 @@ async def get_current_user(
     )
 
     if not user_record:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     return str(user_record["id"])
