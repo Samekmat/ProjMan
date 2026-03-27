@@ -35,6 +35,25 @@ docker compose up --build
 
 ---
 
+## Run from GitHub Container Registry (GHCR)
+
+If you don't want to clone the repository or build the image locally, you can pull the ready-to-use production image directly from GitHub:
+
+**1. Pull the image:**
+```bash
+docker pull ghcr.io/samekmat/projman:latest
+```
+
+**2. Run the container:**
+You will need to provide your own environment variables (e.g., via a `.env` file or directly in the command):
+
+```bash
+docker run -p 8000:8000 --env-file .env ghcr.io/samekmat/projman:latest
+```
+*(Note: Ensure you have a PostgreSQL database running and accessible by the container via `DATABASE_URL`).*
+
+---
+
 ## How to Upload Files (Direct-to-S3 Workflow)
 
 Because this API uses a Serverless Event-Driven Architecture, files are not sent through the backend. Instead, you upload them directly to AWS S3 using a Presigned URL.
