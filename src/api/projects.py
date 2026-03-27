@@ -149,7 +149,8 @@ async def invite_user_to_project(
 
     if not target_user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"User with login '{user}' not found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User with login '{user}' not found",
         )
 
     target_user_id = target_user["id"]
@@ -206,7 +207,9 @@ async def get_project_info(
     )
 
     if not record:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Project not found"
+        )
 
     return dict(record)
 
@@ -232,7 +235,9 @@ async def update_project_info(
     )
 
     if not role:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
+        )
 
     updated_record = await conn.fetchrow(
         """
@@ -271,7 +276,10 @@ async def share_project_via_email(
     )
 
     if role != "owner":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only owner can share the project")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only owner can share the project",
+        )
 
     expire = datetime.now(timezone.utc) + timedelta(hours=48)
 
@@ -305,7 +313,9 @@ async def join_project_via_link(
         )
 
         if payload.get("type") != "invite":
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token type")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token type"
+            )
 
         project_id = payload.get("project_id")
         email = payload.get("email")
@@ -318,7 +328,8 @@ async def join_project_via_link(
     target_user = await conn.fetchrow("SELECT id FROM users WHERE login = $1", email)
     if not target_user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User with this email/login must register first"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User with this email/login must register first",
         )
 
     await conn.execute(

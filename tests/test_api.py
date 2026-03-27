@@ -124,8 +124,9 @@ def test_create_project_success():
 
 def test_get_projects_includes_documents():
     """Tests if GET /projects returns documents list."""
-    from src.api.deps import get_current_user
     from unittest.mock import AsyncMock
+
+    from src.api.deps import get_current_user
 
     mock_conn = AsyncMock()
     mock_conn.fetch.return_value = [
@@ -170,8 +171,9 @@ def test_get_projects_includes_documents():
 
 def test_create_document_path_updated():
     """Tests if a POST /project/{id}/documents path works."""
-    from src.api.deps import get_current_user
     from unittest.mock import AsyncMock, patch
+
+    from src.api.deps import get_current_user
 
     mock_conn = AsyncMock()
     mock_conn.fetchval.return_value = "owner"
@@ -188,7 +190,9 @@ def test_create_document_path_updated():
     project_id = "550e8400-e29b-41d4-a716-446655440001"
     payload = {"filename": "test.txt", "content_type": "text/plain"}
 
-    with patch("src.api.documents.generate_presigned_upload_url", new_callable=AsyncMock) as mock_s3:
+    with patch(
+        "src.api.documents.generate_presigned_upload_url", new_callable=AsyncMock
+    ) as mock_s3:
         mock_s3.return_value = "http://fake-s3-url.com"
         response = client.post(
             f"/project/{project_id}/documents",
