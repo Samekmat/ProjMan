@@ -1,9 +1,10 @@
-import gzip
-import urllib.parse
-import boto3
-import os
-import asyncpg
 import asyncio
+import gzip
+import os
+import urllib.parse
+
+import asyncpg
+import boto3
 from PIL import Image
 
 s3 = boto3.client("s3")
@@ -56,7 +57,8 @@ def lambda_handler(event, context):
         filename = os.path.basename(key)
         prefix_path = os.path.dirname(key)
 
-        if filename.startswith("processed-") or "-processed" in key or key.lower().endswith(".gz"):
+        if (filename.startswith("processed-") or "-processed"
+                in key or key.lower().endswith(".gz")):
             print(f"Skipping already processed file: {key}")
             return {"statusCode": 200, "body": "Skipped"}
 
@@ -71,7 +73,8 @@ def lambda_handler(event, context):
             print(f"Image detected ({ext}). Resizing...")
 
             new_filename = f"processed-{filename}"
-            new_key = os.path.join(prefix_path, new_filename) if prefix_path else new_filename
+            new_key = os.path.join(prefix_path, new_filename) if prefix_path\
+                else new_filename
             output_path = f"/tmp/{new_filename}"
 
             with Image.open(download_path) as img:

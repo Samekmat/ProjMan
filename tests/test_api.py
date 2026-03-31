@@ -209,7 +209,9 @@ def test_create_document_path_updated():
 
 
 def test_create_document_storage_limit_exceeded():
-    """Tests if POST /project/{id}/documents returns 400 when storage limit is exceeded."""
+    """
+    Tests if POST /project/{id}/documents returns 400 when storage limit is exceeded.
+    """
     from unittest.mock import AsyncMock
 
     from src.api.deps import get_current_user
@@ -217,7 +219,9 @@ def test_create_document_storage_limit_exceeded():
 
     mock_conn = AsyncMock()
     mock_conn.fetchval.return_value = "owner"
-    mock_conn.fetchrow.return_value = {"total_storage_bytes": settings.PROJECT_STORAGE_LIMIT_BYTES + 1}
+    mock_conn.fetchrow.return_value = {
+        "total_storage_bytes": settings.PROJECT_STORAGE_LIMIT_BYTES + 1
+    }
 
     async def override_get_db():
         yield mock_conn

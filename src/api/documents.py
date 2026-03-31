@@ -48,12 +48,13 @@ async def create_document_upload_url(
     )
 
     if (
-        project_storage
-        and project_storage["total_storage_bytes"] >= settings.PROJECT_STORAGE_LIMIT_BYTES
+        project_storage and
+        project_storage["total_storage_bytes"] >= settings.PROJECT_STORAGE_LIMIT_BYTES
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Project storage limit exceeded ({settings.PROJECT_STORAGE_LIMIT_BYTES} bytes)",
+            detail=f"Project storage limit exceeded ("
+                   f"{settings.PROJECT_STORAGE_LIMIT_BYTES} bytes)",
         )
 
     doc_id = str(uuid.uuid4())
