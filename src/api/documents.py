@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.api.deps import get_current_user
 from src.api.schemas import DocumentCreate, DocumentResponse, DocumentUpdate
+from src.core.config import settings
 from src.db.connection import get_db_connection
 from src.services.s3 import (
     delete_file_from_s3,
@@ -40,6 +41,19 @@ async def create_document_upload_url(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have access to this project",
+        )
+
+    project_storage = await conn.fetchrow(
+        "SELECT total_storage_bytes FROM projects WHERE id = $1::uuid", project_id
+    )
+
+    if (
+        project_storage
+        and project_storage["total_storage_bytes"] >= settings.PROJECT_STORAGE_LIMIT_BYTES
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Project storage limit exceeded ({settings.PROJECT_STORAGE_LIMIT_BYTES} bytes)",
         )
 
     doc_id = str(uuid.uuid4())

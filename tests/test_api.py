@@ -177,6 +177,7 @@ def test_create_document_path_updated():
 
     mock_conn = AsyncMock()
     mock_conn.fetchval.return_value = "owner"
+    mock_conn.fetchrow.return_value = {"total_storage_bytes": 0}
 
     async def override_get_db():
         yield mock_conn
@@ -203,5 +204,40 @@ def test_create_document_path_updated():
     assert response.status_code == 201
     assert "upload_url" in response.json()
     assert response.json()["upload_url"] == "http://fake-s3-url.com"
+
+    app.dependency_overrides.clear()
+
+
+def test_create_document_storage_limit_exceeded():
+    """Tests if POST /project/{id}/documents returns 400 when storage limit is exceeded."""
+    from unittest.mock import AsyncMock
+
+    from src.api.deps import get_current_user
+    from src.core.config import settings
+
+    mock_conn = AsyncMock()
+    mock_conn.fetchval.return_value = "owner"
+    mock_conn.fetchrow.return_value = {"total_storage_bytes": settings.PROJECT_STORAGE_LIMIT_BYTES + 1}
+
+    async def override_get_db():
+        yield mock_conn
+
+    async def override_get_current_user():
+        return "550e8400-e29b-41d4-a716-446655440000"
+
+    app.dependency_overrides[get_db_connection] = override_get_db
+    app.dependency_overrides[get_current_user] = override_get_current_user
+
+    project_id = "550e8400-e29b-41d4-a716-446655440001"
+    payload = {"filename": "test.txt", "content_type": "text/plain"}
+
+    response = client.post(
+        f"/project/{project_id}/documents",
+        json=payload,
+        headers={"Authorization": "Bearer fake-token"}
+    )
+
+    assert response.status_code == 400
+    assert "Project storage limit exceeded" in response.json()["detail"]
 
     app.dependency_overrides.clear()

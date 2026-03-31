@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     AWS_REGION: str
     AWS_SESSION_TOKEN: str
     S3_BUCKET_NAME: str
+
+    # --- Limits ---
+    PROJECT_STORAGE_LIMIT_BYTES: int = 100 * 1024 * 1024  # 100 MB default
     # ------------------------
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
