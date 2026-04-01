@@ -80,6 +80,7 @@ async def get_my_projects(
     )
 
     import json
+
     results = []
     for p in projects_records:
         p_dict = dict(p)
@@ -158,7 +159,7 @@ async def invite_user_to_project(
     if str(target_user_id) == current_user_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You cannot invite yourself to the project"
+            detail="You cannot invite yourself to the project",
         )
 
     existing_role = await conn.fetchval(

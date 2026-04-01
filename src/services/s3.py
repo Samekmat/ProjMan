@@ -1,4 +1,5 @@
 import aioboto3
+import botocore.exceptions
 
 from src.core.config import settings
 
@@ -71,3 +72,28 @@ async def delete_file_from_s3(object_name: str) -> None:
         aws_session_token=settings.AWS_SESSION_TOKEN,
     ) as s3_client:
         await s3_client.delete_object(Bucket=settings.S3_BUCKET_NAME, Key=object_name)
+
+
+async def get_file_metadata_from_s3(object_name: str) -> dict | None:
+    """
+    Get file metadata (like size) from S3 bucket.
+    Returns None if file does not exist.
+    """
+    session = aioboto3.Session()
+
+    async with session.client(
+        "s3",
+        region_name=settings.AWS_REGION,
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        aws_session_token=settings.AWS_SESSION_TOKEN,
+    ) as s3_client:
+        try:
+            response = await s3_client.head_object(
+                Bucket=settings.S3_BUCKET_NAME, Key=object_name
+            )
+            return response
+        except botocore.exceptions.ClientError as e:
+            if e.response["Error"]["Code"] == "404":
+                return None
+            raise

@@ -142,9 +142,9 @@ def test_get_projects_includes_documents():
                     "filename": "file.pdf",
                     "s3_key": "key/file.pdf",
                     "size_bytes": 50,
-                    "created_at": "2024-01-01T00:00:00Z"
+                    "created_at": "2024-01-01T00:00:00Z",
                 }
-            ]
+            ],
         }
     ]
 
@@ -198,7 +198,7 @@ def test_create_document_path_updated():
         response = client.post(
             f"/project/{project_id}/documents",
             json=payload,
-            headers={"Authorization": "Bearer fake-token"}
+            headers={"Authorization": "Bearer fake-token"},
         )
 
     assert response.status_code == 201
@@ -238,7 +238,7 @@ def test_create_document_storage_limit_exceeded():
     response = client.post(
         f"/project/{project_id}/documents",
         json=payload,
-        headers={"Authorization": "Bearer fake-token"}
+        headers={"Authorization": "Bearer fake-token"},
     )
 
     assert response.status_code == 400
